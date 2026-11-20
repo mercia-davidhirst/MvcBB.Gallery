@@ -1,0 +1,60 @@
+@using MvcBB.Gallery.App
+@model PagedImagesDto
+@{
+    var category = (GalleryCategoryDto)ViewBag.Category;
+    ViewData["Title"] = category.Name;
+    int page = ViewBag.Page;
+    const int pageSize = 12;
+    var totalPages = (int)Math.Ceiling(Model.TotalCount / (double)pageSize);
+}
+
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a asp-action="Index">Gallery</a></li>
+        <li class="breadcrumb-item active">@category.Name</li>
+    </ol>
+</nav>
+
+<h1>@category.Name</h1>
+@if (!string.IsNullOrEmpty(category.Description))
+{
+    <p class="text-muted">@category.Description</p>
+}
+
+@if (!Model.Items.Any())
+{
+    <p class="text-muted">No images in this category yet.</p>
+}
+else
+{
+    <div class="row row-cols-2 row-cols-md-3 row-cols-lg-4 g-3">
+        @foreach (var image in Model.Items)
+        {
+            <div class="col">
+                <a asp-action="Image" asp-route-id="@image.Id" class="text-decoration-none">
+                    <img src="@image.ImageUrl" class="img-fluid rounded" alt="@image.Name" style="aspect-ratio: 1; object-fit: cover; width: 100%;" />
+                </a>
+                <div class="small text-truncate mt-1">@image.Name</div>
+                <small class="text-muted">
+                    <i class="bi bi-eye"></i> @image.ViewCount
+                    <i class="bi bi-hand-thumbs-up ms-2"></i> @image.LikeCount
+                    <i class="bi bi-chat ms-2"></i> @image.CommentCount
+                </small>
+            </div>
+        }
+    </div>
+
+    @if (totalPages > 1)
+    {
+        <nav class="mt-3">
+            <ul class="pagination">
+                @for (var p = 1; p <= totalPages; p++)
+                {
+                    <li class="page-item @(p == page ? "active" : "")">
+                        <a class="page-link" asp-action="Category" asp-route-id="@category.Id" asp-route-page="@p">@p</a>
+                    </li>
+                }
+            </ul>
+        </nav>
+    }
+}

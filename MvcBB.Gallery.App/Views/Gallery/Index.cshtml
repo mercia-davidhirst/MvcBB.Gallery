@@ -1,0 +1,68 @@
+@using MvcBB.Gallery.App
+@{
+    ViewData["Title"] = "Gallery";
+    var categories = (IEnumerable<GalleryCategoryDto>)ViewBag.Categories;
+    var recent = (IEnumerable<GalleryImageDto>)ViewBag.Recent;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1><i class="bi bi-images"></i> Gallery</h1>
+    <div>
+        <a asp-action="Upload" class="btn btn-primary"><i class="bi bi-upload"></i> Upload Image</a>
+        @if (User.IsInRole("Administrator"))
+        {
+            <a asp-action="Categories" class="btn btn-outline-secondary"><i class="bi bi-gear"></i> Manage Categories</a>
+        }
+    </div>
+</div>
+
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger">@TempData["Error"]</div>
+}
+
+<div class="card mb-4">
+    <div class="card-header">Categories</div>
+    <div class="list-group list-group-flush">
+        @if (!categories.Any())
+        {
+            <div class="list-group-item text-muted">No categories added yet.</div>
+        }
+        @foreach (var category in categories)
+        {
+            <a asp-action="Category" asp-route-id="@category.Id" class="list-group-item list-group-item-action">
+                <div class="d-flex justify-content-between">
+                    <strong>@category.Name</strong>
+                </div>
+                @if (!string.IsNullOrEmpty(category.Description))
+                {
+                    <small class="text-muted">@category.Description</small>
+                }
+            </a>
+        }
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">Recent uploads</div>
+    <div class="card-body">
+        @if (!recent.Any())
+        {
+            <p class="text-muted mb-0">No images uploaded yet.</p>
+        }
+        else
+        {
+            <div class="row row-cols-2 row-cols-md-3 row-cols-lg-6 g-3">
+                @foreach (var image in recent)
+                {
+                    <div class="col">
+                        <a asp-action="Image" asp-route-id="@image.Id" class="text-decoration-none">
+                            <img src="@image.ImageUrl" class="img-fluid rounded" alt="@image.Name" style="aspect-ratio: 1; object-fit: cover; width: 100%;" />
+                            <div class="small text-truncate mt-1">@image.Name</div>
+                        </a>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</div>

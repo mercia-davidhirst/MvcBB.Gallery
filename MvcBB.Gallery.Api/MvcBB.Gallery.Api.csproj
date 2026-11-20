@@ -1,0 +1,25 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- MvcBB core isn't a NuGet package yet (see MvcBB's own mod-framework
+         notes) - referencing its projects by relative path is the
+         placeholder until it is, while still keeping this mod in its own
+         separate solution, never inside MvcBB's. -->
+    <ProjectReference Include="..\..\MvcBB - Local\Solution\MvcBB.ModKit\MvcBB.ModKit.csproj" />
+    <ProjectReference Include="..\..\MvcBB - Local\Solution\MvcBB.Shared\MvcBB.Shared.csproj" />
+    <ProjectReference Include="..\..\MvcBB - Local\Solution\MvcBB.API.SQL\MvcBB.API.SQL.csproj" />
+    <ProjectReference Include="..\..\MvcBB - Local\Solution\MvcBB.API.PostgreSql\MvcBB.API.PostgreSql.csproj" />
+    <ProjectReference Include="..\..\MvcBB - Local\Solution\MvcBB.API.InMemory\MvcBB.API.InMemory.csproj" />
+  </ItemGroup>
+
+</Project>

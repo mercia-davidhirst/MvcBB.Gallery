@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AddRazorSupportForMvc>true</AddRazorSupportForMvc>
+    <!-- A drop-in mod DLL has no file watcher to fall back on for runtime
+         Razor compilation - views must be precompiled in every configuration. -->
+    <RazorCompileOnBuild>true</RazorCompileOnBuild>
+    <RazorCompileOnPublish>true</RazorCompileOnPublish>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\MvcBB - Local\Solution\MvcBB.ModKit\MvcBB.ModKit.csproj" />
+    <ProjectReference Include="..\..\MvcBB - Local\Solution\MvcBB.Shared\MvcBB.Shared.csproj" />
+  </ItemGroup>
+
+</Project>

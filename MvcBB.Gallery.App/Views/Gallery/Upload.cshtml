@@ -1,0 +1,38 @@
+@using MvcBB.Gallery.App
+@{
+    ViewData["Title"] = "Upload Image";
+    var categories = (IEnumerable<GalleryCategoryDto>)ViewBag.Categories;
+}
+
+<h1>Upload Image</h1>
+
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger">@TempData["Error"]</div>
+}
+
+<form asp-action="Upload" method="post" enctype="multipart/form-data" class="col-md-6">
+    <div class="mb-3">
+        <label class="form-label">Category</label>
+        <select name="categoryId" class="form-select" required>
+            @foreach (var category in categories)
+            {
+                <option value="@category.Id">@category.Name</option>
+            }
+        </select>
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Name</label>
+        <input type="text" name="name" class="form-control" maxlength="200" required />
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Description</label>
+        <textarea name="description" class="form-control" rows="4" maxlength="2000"></textarea>
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Image file (PNG, JPG, GIF - max 10 MB)</label>
+        <input type="file" name="file" class="form-control" accept=".png,.jpg,.jpeg,.gif" required />
+    </div>
+    <button type="submit" class="btn btn-primary">Upload</button>
+    <a asp-action="Index" class="btn btn-outline-secondary">Cancel</a>
+</form>
