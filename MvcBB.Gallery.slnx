@@ -1,8 +1,9 @@
 <Solution>
-  <Project Path="../MvcBB - Local/Solution/MvcBB.API.PostgreSql/MvcBB.API.PostgreSql.csproj" />
-  <Project Path="../MvcBB - Local/Solution/MvcBB.API.SQL/MvcBB.API.SQL.csproj" />
-  <Project Path="../MvcBB - Local/Solution/MvcBB.ModKit/MvcBB.ModKit.csproj" />
-  <Project Path="../MvcBB - Local/Solution/MvcBB.Shared/MvcBB.Shared.csproj" />
+  <Project Path="../MvcBB/Solution/MvcBB.API.InMemory/MvcBB.API.InMemory.csproj" />
+  <Project Path="../MvcBB/Solution/MvcBB.API.PostgreSql/MvcBB.API.PostgreSql.csproj" />
+  <Project Path="../MvcBB/Solution/MvcBB.API.SQL/MvcBB.API.SQL.csproj" />
+  <Project Path="../MvcBB/Solution/MvcBB.ModKit/MvcBB.ModKit.csproj" />
+  <Project Path="../MvcBB/Solution/MvcBB.Shared/MvcBB.Shared.csproj" />
   <Project Path="MvcBB.Gallery.Api/MvcBB.Gallery.Api.csproj" />
   <Project Path="MvcBB.Gallery.App/MvcBB.Gallery.App.csproj" />
 </Solution>
