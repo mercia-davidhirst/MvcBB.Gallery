@@ -27,7 +27,12 @@ namespace MvcBB.Gallery.Api
         [StringLength(2000)]
         public string? Description { get; set; }
 
+        // Only the exact shape GalleryImageStorageService produces is accepted
+        // (/images/gallery/<guid>.<ext>). The App deletes the file at this path
+        // when the image is removed, so a client-chosen path such as
+        // "/../appsettings.json" must never be stored.
         [Required]
+        [RegularExpression(GalleryImagePath.Pattern, ErrorMessage = "Invalid image path.")]
         public string ImageUrl { get; set; } = string.Empty;
 
         public long FileSizeBytes { get; set; }

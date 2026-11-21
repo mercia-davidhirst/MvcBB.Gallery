@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 
@@ -18,6 +19,13 @@ namespace MvcBB.Gallery.App
         private const long MaxFileSizeBytes = 10 * 1024 * 1024; // 10 MB - gallery photos/art, not profile pictures
         private const string Subfolder = "gallery";
 
+        // Matches exactly what SaveImageAsync returns. DeleteImage refuses
+        // anything else, so a tampered or legacy URL can never point it at a
+        // file outside the gallery folder.
+        private static readonly Regex StoredUrlPattern = new(
+            @"^/images/gallery/(?<file>[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\.(png|jpg|jpeg|gif))\z",
+            RegexOptions.Compiled | RegexOptions.CultureInvariant);
+
         private readonly IWebHostEnvironment _webHostEnvironment;
 
         public GalleryImageStorageService(IWebHostEnvironment webHostEnvironment)
@@ -37,7 +45,7 @@ namespace MvcBB.Gallery.App
             if (!AllowedExtensions.Contains(extension) || !AllowedContentTypes.Contains(file.ContentType.ToLowerInvariant()))
                 throw new GalleryServiceException("Only PNG, JPG, and GIF images are allowed.");
 
-            var uploadsFolder = Path.Combine(_webHostEnvironment.WebRootPath, "images", Subfolder);
+            var uploadsFolder = GalleryFolder;
             Directory.CreateDirectory(uploadsFolder);
 
             var uniqueFileName = $"{Guid.NewGuid()}{extension}";
@@ -56,9 +64,21 @@ namespace MvcBB.Gallery.App
             if (string.IsNullOrEmpty(relativeUrl))
                 return;
 
-            var filePath = Path.Combine(_webHostEnvironment.WebRootPath, relativeUrl.TrimStart('/'));
+            var match = StoredUrlPattern.Match(relativeUrl);
+            if (!match.Success)
+                return;
+
+            // Build the path from the folder plus the bare file name only, then
+            // confirm it still resolves inside the gallery folder before deleting.
+            var galleryFolder = Path.GetFullPath(GalleryFolder);
+            var filePath = Path.GetFullPath(Path.Combine(galleryFolder, match.Groups["file"].Value));
+            if (!filePath.StartsWith(galleryFolder + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
+                return;
+
             if (File.Exists(filePath))
                 File.Delete(filePath);
         }
+
+        private string GalleryFolder => Path.Combine(_webHostEnvironment.WebRootPath, "images", Subfolder);
     }
 }
