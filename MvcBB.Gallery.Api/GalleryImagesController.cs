@@ -12,6 +12,9 @@ namespace MvcBB.Gallery.Api
     public class GalleryImagesController : ControllerBase
     {
         private const int DefaultPageSize = 12;
+        private const int MaxPageSize = 50;
+        private const int MaxPage = 100_000;
+        private const int MaxRecentCount = 50;
 
         private readonly IGalleryImageRepository _imageRepository;
         private readonly IGalleryCategoryRepository _categoryRepository;
@@ -28,11 +31,13 @@ namespace MvcBB.Gallery.Api
             if (_categoryRepository.GetById(categoryId) == null)
                 return NotFound(new { message = "Category not found" });
 
-            return Ok(_imageRepository.GetByCategory(categoryId, Math.Max(page, 1), pageSize));
+            return Ok(_imageRepository.GetByCategory(
+                categoryId, Math.Clamp(page, 1, MaxPage), Math.Clamp(pageSize, 1, MaxPageSize)));
         }
 
         [HttpGet("images/recent")]
-        public ActionResult<IEnumerable<GalleryImage>> GetRecent(int count = 5) => Ok(_imageRepository.GetRecent(count));
+        public ActionResult<IEnumerable<GalleryImage>> GetRecent(int count = 5) =>
+            Ok(_imageRepository.GetRecent(Math.Clamp(count, 1, MaxRecentCount)));
 
         [HttpGet("images/{id}")]
         public ActionResult<GalleryImage> GetById(int id)
@@ -55,6 +60,12 @@ namespace MvcBB.Gallery.Api
             if (!ModelState.IsValid) return BadRequest(ModelState);
             if (_categoryRepository.GetById(request.CategoryId) == null)
                 return BadRequest(new { message = "Category not found" });
+
+            // Each stored file belongs to exactly one entry. Otherwise a member
+            // could point a new entry at someone else's file, delete their own
+            // entry, and take the other member's file with it.
+            if (_imageRepository.IsImageUrlInUse(request.ImageUrl))
+                return Conflict(new { message = "That image file is already in use." });
 
             var userId = CurrentUserId!.Value;
             var created = _imageRepository.Add(new GalleryImage
@@ -98,7 +109,11 @@ namespace MvcBB.Gallery.Api
             if (!CanManage(image.UploadedByUserId)) return Forbid();
 
             _imageRepository.Remove(id);
-            return Ok(new { imageUrl = image.ImageUrl });
+
+            // Only hand the file back for deletion once nothing else points at
+            // it (older data may predate the one-entry-per-file rule).
+            var fileStillUsed = _imageRepository.IsImageUrlInUse(image.ImageUrl);
+            return Ok(new { imageUrl = fileStillUsed ? null : image.ImageUrl });
         }
 
         [HttpPost("images/{id}/comments")]

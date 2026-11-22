@@ -35,6 +35,8 @@ namespace MvcBB.Gallery.Api
         [RegularExpression(GalleryImagePath.Pattern, ErrorMessage = "Invalid image path.")]
         public string ImageUrl { get; set; } = string.Empty;
 
+        // Must match GalleryImageStorageService's own 10 MB upload limit.
+        [Range(1, 10 * 1024 * 1024, ErrorMessage = "Invalid file size.")]
         public long FileSizeBytes { get; set; }
     }
 

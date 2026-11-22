@@ -53,11 +53,23 @@ namespace MvcBB.Gallery.App
             await EnsureSuccessAsync(response);
         }
 
-        public async Task DeleteCategoryAsync(int id)
+        public async Task<IReadOnlyList<string>> DeleteCategoryAsync(int id, int? moveToCategoryId)
         {
             Authorize();
-            var response = await _httpClient.DeleteAsync($"api/mods/gallery/categories/{id}");
+            var url = moveToCategoryId.HasValue
+                ? $"api/mods/gallery/categories/{id}?moveToCategoryId={moveToCategoryId.Value}"
+                : $"api/mods/gallery/categories/{id}";
+            var response = await _httpClient.DeleteAsync(url);
             await EnsureSuccessAsync(response);
+
+            var result = await DeserializeAsync<JsonElement>(response);
+            if (result.ValueKind != JsonValueKind.Object || !result.TryGetProperty("imageUrls", out var urls) || urls.ValueKind != JsonValueKind.Array)
+                return Array.Empty<string>();
+
+            return urls.EnumerateArray()
+                .Where(u => u.ValueKind == JsonValueKind.String)
+                .Select(u => u.GetString()!)
+                .ToList();
         }
 
         public async Task<PagedImagesDto> GetImagesAsync(int categoryId, int page)

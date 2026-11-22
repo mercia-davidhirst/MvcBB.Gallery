@@ -6,7 +6,11 @@ namespace MvcBB.Gallery.App
         Task<GalleryCategoryDto?> GetCategoryAsync(int id);
         Task<GalleryCategoryDto> CreateCategoryAsync(GalleryCategoryDto category);
         Task UpdateCategoryAsync(int id, GalleryCategoryDto category);
-        Task DeleteCategoryAsync(int id);
+        /// <summary>
+        /// Deletes a category. With <paramref name="moveToCategoryId"/>, its images move there first;
+        /// without it they're deleted too, and their stored file URLs are returned for removal from disk.
+        /// </summary>
+        Task<IReadOnlyList<string>> DeleteCategoryAsync(int id, int? moveToCategoryId);
 
         Task<PagedImagesDto> GetImagesAsync(int categoryId, int page);
         Task<GalleryImageDto?> GetImageAsync(int id);

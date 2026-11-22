@@ -80,6 +80,28 @@ namespace MvcBB.Gallery.Api
             connection.Execute("UPDATE dbo.Mod_Gallery_Images SET ViewCount = ViewCount + 1 WHERE Id = @Id", new { Id = id });
         }
 
+        public bool IsImageUrlInUse(string imageUrl)
+        {
+            using var connection = _connectionFactory.CreateConnection();
+            return connection.QuerySingle<int>(
+                "SELECT COUNT(*) FROM dbo.Mod_Gallery_Images WHERE ImageUrl = @ImageUrl", new { ImageUrl = imageUrl }) > 0;
+        }
+
+        public IReadOnlyList<string> GetImageUrlsByCategory(int categoryId)
+        {
+            using var connection = _connectionFactory.CreateConnection();
+            return connection.Query<string>(
+                "SELECT ImageUrl FROM dbo.Mod_Gallery_Images WHERE CategoryId = @CategoryId", new { CategoryId = categoryId }).ToList();
+        }
+
+        public void MoveCategoryImages(int fromCategoryId, int toCategoryId)
+        {
+            using var connection = _connectionFactory.CreateConnection();
+            connection.Execute(
+                "UPDATE dbo.Mod_Gallery_Images SET CategoryId = @ToCategoryId WHERE CategoryId = @FromCategoryId",
+                new { FromCategoryId = fromCategoryId, ToCategoryId = toCategoryId });
+        }
+
         public IReadOnlyList<GalleryComment> GetComments(int imageId)
         {
             using var connection = _connectionFactory.CreateConnection();

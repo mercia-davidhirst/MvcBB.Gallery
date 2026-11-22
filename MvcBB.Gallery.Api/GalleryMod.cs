@@ -10,7 +10,7 @@ namespace MvcBB.Gallery.Api
     {
         public string Id => "gallery";
         public string Name => "Gallery";
-        public string Version => "1.0.0";
+        public string Version => "1.1.0";
         public string MinCoreVersion => "1.0.0";
         public string? MaxCoreVersion => null;
 
@@ -94,6 +94,17 @@ namespace MvcBB.Gallery.Api
                     CREATE NONCLUSTERED INDEX IX_Mod_Gallery_Images_CategoryId_UploadedAt ON dbo.Mod_Gallery_Images (CategoryId, UploadedAt DESC);
                 END");
 
+            // 1.1.0: one entry per stored file, so no entry can point at (and
+            // later get deleted along with) another member's file. Skipped if
+            // existing data already has duplicates; the API's own check still
+            // applies to new uploads either way.
+            await connection.ExecuteAsync(@"
+                IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'UX_Mod_Gallery_Images_ImageUrl' AND object_id = OBJECT_ID('dbo.Mod_Gallery_Images'))
+                   AND NOT EXISTS (SELECT ImageUrl FROM dbo.Mod_Gallery_Images GROUP BY ImageUrl HAVING COUNT(*) > 1)
+                BEGIN
+                    CREATE UNIQUE NONCLUSTERED INDEX UX_Mod_Gallery_Images_ImageUrl ON dbo.Mod_Gallery_Images (ImageUrl);
+                END");
+
             await connection.ExecuteAsync(@"
                 IF OBJECT_ID('dbo.Mod_Gallery_Comments') IS NULL
                 BEGIN
@@ -158,6 +169,15 @@ namespace MvcBB.Gallery.Api
                 );
 
                 CREATE INDEX IF NOT EXISTS ix_mod_gallery_images_category_id_uploaded_at ON public.mod_gallery_images (category_id, uploaded_at DESC);");
+
+            // 1.1.0: one entry per stored file (see the SQL Server version above).
+            await connection.ExecuteAsync(@"
+                DO $$
+                BEGIN
+                    IF NOT EXISTS (SELECT 1 FROM public.mod_gallery_images GROUP BY image_url HAVING COUNT(*) > 1) THEN
+                        CREATE UNIQUE INDEX IF NOT EXISTS ux_mod_gallery_images_image_url ON public.mod_gallery_images (image_url);
+                    END IF;
+                END $$;");
 
             await connection.ExecuteAsync(@"
                 CREATE TABLE IF NOT EXISTS public.mod_gallery_comments

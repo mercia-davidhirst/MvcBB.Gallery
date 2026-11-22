@@ -11,10 +11,12 @@ namespace MvcBB.Gallery.Api
     public class GalleryCategoriesController : ControllerBase
     {
         private readonly IGalleryCategoryRepository _categoryRepository;
+        private readonly IGalleryImageRepository _imageRepository;
 
-        public GalleryCategoriesController(IGalleryCategoryRepository categoryRepository)
+        public GalleryCategoriesController(IGalleryCategoryRepository categoryRepository, IGalleryImageRepository imageRepository)
         {
             _categoryRepository = categoryRepository;
+            _imageRepository = imageRepository;
         }
 
         [HttpGet]
@@ -61,12 +63,27 @@ namespace MvcBB.Gallery.Api
 
         [HttpDelete("{id}")]
         [Authorize(Roles = "Administrator")]
-        public IActionResult Delete(int id)
+        public IActionResult Delete(int id, int? moveToCategoryId = null)
         {
             if (_categoryRepository.GetById(id) == null) return NotFound(new { message = "Category not found" });
 
+            if (moveToCategoryId.HasValue)
+            {
+                if (moveToCategoryId.Value == id || _categoryRepository.GetById(moveToCategoryId.Value) == null)
+                    return BadRequest(new { message = "Choose a different, existing category to move the images to." });
+
+                _imageRepository.MoveCategoryImages(id, moveToCategoryId.Value);
+                _categoryRepository.Remove(id);
+                return Ok(new { imageUrls = Array.Empty<string>() });
+            }
+
+            // Deleting the category cascades to its images. Return their files
+            // so the App can remove them from disk too, leaving out any file
+            // another entry still points at.
+            var imageUrls = _imageRepository.GetImageUrlsByCategory(id);
             _categoryRepository.Remove(id);
-            return NoContent();
+            var orphanedUrls = imageUrls.Distinct().Where(url => !_imageRepository.IsImageUrlInUse(url)).ToList();
+            return Ok(new { imageUrls = orphanedUrls });
         }
     }
 }

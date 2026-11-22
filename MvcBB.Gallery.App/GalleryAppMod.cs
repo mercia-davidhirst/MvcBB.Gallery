@@ -22,6 +22,8 @@ namespace MvcBB.Gallery.App
 
             services.AddScoped<IGalleryService, GalleryService>();
             services.AddScoped<IGalleryImageStorage, GalleryImageStorageService>();
+            services.AddSingleton<GalleryUploadRateLimiter>();
+            services.AddHostedService<GalleryLegacyFileMover>();
         }
 
         public IEnumerable<ModNavItem> GetNavItems()

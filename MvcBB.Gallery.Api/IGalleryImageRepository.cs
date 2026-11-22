@@ -10,6 +10,11 @@ namespace MvcBB.Gallery.Api
         void Remove(int id);
         void IncrementViewCount(int id);
 
+        /// <summary>Whether any image entry points at this stored file.</summary>
+        bool IsImageUrlInUse(string imageUrl);
+        IReadOnlyList<string> GetImageUrlsByCategory(int categoryId);
+        void MoveCategoryImages(int fromCategoryId, int toCategoryId);
+
         IReadOnlyList<GalleryComment> GetComments(int imageId);
         GalleryComment? GetCommentById(int commentId);
         GalleryComment AddComment(GalleryComment comment);

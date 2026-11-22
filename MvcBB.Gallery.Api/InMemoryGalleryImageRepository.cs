@@ -15,11 +15,24 @@ namespace MvcBB.Gallery.Api
 
         private string? UsernameOf(int userId) => _coreStore.Users.FirstOrDefault(u => u.Id == userId)?.Username;
 
-        private GalleryImage WithUsername(GalleryImage image)
+        // Hands out a copy, never the stored object itself: callers set
+        // per-request fields (LikedByCurrentUser, Comments) on what they get
+        // back, which must not leak into the shared store or to other users.
+        private GalleryImage WithUsername(GalleryImage image) => new()
         {
-            image.UploadedByUsername = UsernameOf(image.UploadedByUserId);
-            return image;
-        }
+            Id = image.Id,
+            CategoryId = image.CategoryId,
+            Name = image.Name,
+            Description = image.Description,
+            ImageUrl = image.ImageUrl,
+            FileSizeBytes = image.FileSizeBytes,
+            UploadedByUserId = image.UploadedByUserId,
+            UploadedAt = image.UploadedAt,
+            ViewCount = image.ViewCount,
+            LikeCount = image.LikeCount,
+            CommentCount = image.CommentCount,
+            UploadedByUsername = UsernameOf(image.UploadedByUserId)
+        };
 
         public PagedImages GetByCategory(int categoryId, int page, int pageSize)
         {
@@ -68,6 +81,18 @@ namespace MvcBB.Gallery.Api
         {
             var image = _store.Images.FirstOrDefault(i => i.Id == id);
             if (image != null) image.ViewCount++;
+        }
+
+        public bool IsImageUrlInUse(string imageUrl) =>
+            _store.Images.Any(i => string.Equals(i.ImageUrl, imageUrl, StringComparison.Ordinal));
+
+        public IReadOnlyList<string> GetImageUrlsByCategory(int categoryId) =>
+            _store.Images.Where(i => i.CategoryId == categoryId).Select(i => i.ImageUrl).ToList();
+
+        public void MoveCategoryImages(int fromCategoryId, int toCategoryId)
+        {
+            foreach (var image in _store.Images.Where(i => i.CategoryId == fromCategoryId))
+                image.CategoryId = toCategoryId;
         }
 
         public IReadOnlyList<GalleryComment> GetComments(int imageId) =>

@@ -14,11 +14,13 @@ namespace MvcBB.Gallery.App
 
         private readonly IGalleryService _galleryService;
         private readonly IGalleryImageStorage _imageStorage;
+        private readonly GalleryUploadRateLimiter _uploadRateLimiter;
 
-        public GalleryController(IGalleryService galleryService, IGalleryImageStorage imageStorage)
+        public GalleryController(IGalleryService galleryService, IGalleryImageStorage imageStorage, GalleryUploadRateLimiter uploadRateLimiter)
         {
             _galleryService = galleryService;
             _imageStorage = imageStorage;
+            _uploadRateLimiter = uploadRateLimiter;
         }
 
         public async Task<IActionResult> Index()
@@ -56,6 +58,30 @@ namespace MvcBB.Gallery.App
             return View(image);
         }
 
+        /// <summary>
+        /// Serves a stored gallery file at the URL it was saved under. The files
+        /// live outside wwwroot, so this (behind the controller's [Authorize])
+        /// is the only way to open one: guests get the login redirect instead.
+        /// </summary>
+        [HttpGet("/images/gallery/{fileName}")]
+        public IActionResult ImageFile(string fileName)
+        {
+            var filePath = _imageStorage.GetImageFilePath(fileName);
+            if (filePath == null) return NotFound();
+
+            var contentType = Path.GetExtension(filePath).ToLowerInvariant() switch
+            {
+                ".png" => "image/png",
+                ".gif" => "image/gif",
+                _ => "image/jpeg"
+            };
+
+            Response.Headers["X-Content-Type-Options"] = "nosniff";
+            // Members only: browsers may cache it, shared caches/proxies must not.
+            Response.Headers["Cache-Control"] = "private, max-age=86400";
+            return PhysicalFile(filePath, contentType, enableRangeProcessing: false);
+        }
+
         [HttpGet]
         public async Task<IActionResult> Upload()
         {
@@ -71,8 +97,30 @@ namespace MvcBB.Gallery.App
             {
                 if (file == null) throw new GalleryServiceException("Please choose a file to upload.");
 
+                // Check everything the API would reject before writing the file,
+                // so a bad form never leaves a file behind on disk.
+                name = name?.Trim() ?? string.Empty;
+                if (name.Length == 0) throw new GalleryServiceException("Please give the image a name.");
+                if (name.Length > 200) throw new GalleryServiceException("The name must be 200 characters or fewer.");
+                if (description?.Length > 2000) throw new GalleryServiceException("The description must be 2000 characters or fewer.");
+                if (await _galleryService.GetCategoryAsync(categoryId) == null)
+                    throw new GalleryServiceException("Please choose a category.");
+
+                if (CurrentUserId is not int userId || !_uploadRateLimiter.TryAcquire(userId))
+                    throw new GalleryServiceException("You've uploaded a lot of images in a short time. Please wait a few minutes and try again.");
+
                 var imageUrl = await _imageStorage.SaveImageAsync(file);
-                var created = await _galleryService.CreateImageAsync(categoryId, name, description, imageUrl, file.Length);
+                GalleryImageDto created;
+                try
+                {
+                    created = await _galleryService.CreateImageAsync(categoryId, name, description, imageUrl, file.Length);
+                }
+                catch
+                {
+                    // The API didn't record it, so nothing points at this file.
+                    _imageStorage.DeleteImage(imageUrl);
+                    throw;
+                }
                 return RedirectToAction(nameof(Image), new { id = created.Id });
             }
             catch (GalleryServiceException ex)
@@ -229,18 +277,33 @@ namespace MvcBB.Gallery.App
             }
         }
 
+        [HttpGet]
+        [Authorize(Roles = "Administrator")]
+        public async Task<IActionResult> DeleteCategory(int id)
+        {
+            var category = await _galleryService.GetCategoryAsync(id);
+            if (category == null) return NotFound();
+
+            ViewBag.ImageCount = (await _galleryService.GetImagesAsync(id, 1)).TotalCount;
+            ViewBag.OtherCategories = (await _galleryService.GetCategoriesAsync()).Where(c => c.Id != id).ToList();
+            return View(category);
+        }
+
         [HttpPost]
         [Authorize(Roles = "Administrator")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteCategory(int id)
+        public async Task<IActionResult> DeleteCategory(int id, int? moveToCategoryId)
         {
             try
             {
-                await _galleryService.DeleteCategoryAsync(id);
+                var orphanedUrls = await _galleryService.DeleteCategoryAsync(id, moveToCategoryId);
+                foreach (var url in orphanedUrls)
+                    _imageStorage.DeleteImage(url);
             }
             catch (GalleryServiceException ex)
             {
                 TempData["Error"] = ex.Message;
+                return RedirectToAction(nameof(DeleteCategory), new { id });
             }
             return RedirectToAction(nameof(Categories));
         }

@@ -1,0 +1,43 @@
+@using MvcBB.Gallery.App
+@model GalleryCategoryDto
+@{
+    ViewData["Title"] = "Delete Category";
+    int imageCount = ViewBag.ImageCount;
+    var otherCategories = (IEnumerable<GalleryCategoryDto>)ViewBag.OtherCategories;
+}
+
+<h1>Delete Category</h1>
+
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger">@TempData["Error"]</div>
+}
+
+<form asp-action="DeleteCategory" asp-route-id="@Model.Id" method="post" class="col-md-6"
+      onsubmit="return this.moveToCategoryId.value !== '' || confirm('Delete this category and every image in it? This cannot be undone.');">
+    <p>
+        You're deleting <strong>@Model.Name</strong>, which has
+        @imageCount @(imageCount == 1 ? "image" : "images").
+    </p>
+
+    @if (imageCount > 0)
+    {
+        <div class="mb-3">
+            <label for="moveToCategoryId" class="form-label">What should happen to its images?</label>
+            <select id="moveToCategoryId" name="moveToCategoryId" class="form-select">
+                @foreach (var category in otherCategories.OrderBy(c => c.SortOrder))
+                {
+                    <option value="@category.Id">Move them to @category.Name</option>
+                }
+                <option value="">Delete them too, with their comments and likes</option>
+            </select>
+        </div>
+    }
+    else
+    {
+        <input type="hidden" name="moveToCategoryId" value="" />
+    }
+
+    <button type="submit" class="btn btn-danger">Delete Category</button>
+    <a asp-action="Categories" class="btn btn-outline-secondary">Cancel</a>
+</form>
