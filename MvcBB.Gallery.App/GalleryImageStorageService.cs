@@ -1,6 +1,7 @@
 using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using MvcBB.Shared.Services;
 
 namespace MvcBB.Gallery.App
 {
@@ -45,15 +46,23 @@ namespace MvcBB.Gallery.App
             if (!AllowedExtensions.Contains(extension) || !AllowedContentTypes.Contains(file.ContentType.ToLowerInvariant()))
                 throw new GalleryServiceException("Only PNG, JPG, and GIF images are allowed.");
 
+            // Check the file's actual bytes too - the name and content type are
+            // whatever the uploader chose to send. Save it with the extension
+            // of what it really is, so it's always served as that image type.
+            await using var upload = file.OpenReadStream();
+            var detectedExtension = await ImageSignature.DetectExtensionAsync(upload);
+            if (detectedExtension == null)
+                throw new GalleryServiceException("Only PNG, JPG, and GIF images are allowed.");
+
             var uploadsFolder = GalleryFolder;
             Directory.CreateDirectory(uploadsFolder);
 
-            var uniqueFileName = $"{Guid.NewGuid()}{extension}";
+            var uniqueFileName = $"{Guid.NewGuid()}{detectedExtension}";
             var filePath = Path.Combine(uploadsFolder, uniqueFileName);
 
             using (var fileStream = new FileStream(filePath, FileMode.Create))
             {
-                await file.CopyToAsync(fileStream);
+                await upload.CopyToAsync(fileStream);
             }
 
             return $"/images/{Subfolder}/{uniqueFileName}";
