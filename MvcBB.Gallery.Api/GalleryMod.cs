@@ -10,7 +10,7 @@ namespace MvcBB.Gallery.Api
     {
         public string Id => "gallery";
         public string Name => "Gallery";
-        public string Version => "1.1.0";
+        public string Version => "1.1.1";
         public string MinCoreVersion => "1.0.0";
         public string? MaxCoreVersion => null;
 

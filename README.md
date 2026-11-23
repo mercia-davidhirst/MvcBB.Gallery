@@ -120,6 +120,19 @@ Optional, in MvcBB.App's configuration:
    It can be disabled again the same way at any time, with no restart
    required either way.
 
+## Upgrading to 1.1.1
+
+1.1.1 is a bug-fix release. Replace both DLLs and restart both processes.
+
+- Error messages on the gallery, image, upload and category pages showed
+  twice, because the pages repeated the messages core's layout already shows
+  at the top of every page. They now show once.
+- MvcBB.API re-runs the mod's install step because the version changed. It
+  makes no schema changes in this release; if the 1.1.0 unique index on the
+  stored image path was skipped because of duplicates, this run adds it once
+  they've been removed.
+- Upgrading straight from 1.0.0? Follow the 1.1.0 notes below as well.
+
 ## Upgrading to 1.1.0
 
 1.1.0 is a security release. Replace both DLLs and restart both processes.

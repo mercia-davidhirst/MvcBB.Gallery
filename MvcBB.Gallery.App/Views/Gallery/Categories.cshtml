@@ -9,11 +9,6 @@
     <a asp-action="CreateCategory" class="btn btn-primary"><i class="bi bi-plus-circle"></i> Add Category</a>
 </div>
 
-@if (TempData["Error"] != null)
-{
-    <div class="alert alert-danger">@TempData["Error"]</div>
-}
-
 <div class="card">
     <div class="table-responsive">
         <table class="table table-striped mb-0">
